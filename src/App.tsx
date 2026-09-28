@@ -713,19 +713,6 @@ function App() {
     }
   }
 
-  async function signInWithProvider(provider: 'google' | 'apple') {
-    setAuthError('')
-    if (!supabase) {
-      setAuthError(t.oauthConfigRequired)
-      return
-    }
-    const credentials = { provider, options: { redirectTo: window.location.origin } } as const
-    const { error } = authUser?.is_anonymous && authMode === 'signup'
-      ? await supabase.auth.linkIdentity(credentials)
-      : await supabase.auth.signInWithOAuth(credentials)
-    if (error) setAuthError(error.message)
-  }
-
   async function signOut() {
     if (supabase) await supabase.auth.signOut()
     setIsAccountOpen(false)
@@ -942,10 +929,6 @@ function App() {
               <>
                 {authUser?.is_anonymous && <div className="guest-upgrade-note">{authMode === 'signup' ? t.guestUpgrade : t.guestSignInWarning}</div>}
                 <div className="divider">{authUser?.is_anonymous ? t.signUp : t.orSignIn}</div>
-                <div className="oauth-row">
-                  <button className="secondary-action" onClick={() => void signInWithProvider('google')}>{t.google}</button>
-                  <button className="secondary-action" onClick={() => void signInWithProvider('apple')}>{t.apple}</button>
-                </div>
                 <div className="divider">{t.email}</div>
                 <form onSubmit={(event) => void handleEmailAuth(event)}>
                   {turnstileSiteKey && (!authUser || (authUser.is_anonymous && authMode === 'signin')) && (

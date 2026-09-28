@@ -136,7 +136,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .primary-action { margin-top: 16px; border: 0; background: var(--green); color: white; }
 .primary-action:hover { background: var(--green-dark); }
 .secondary-action { display: flex; justify-content: center; align-items: center; gap: 8px; border: 1px solid #dfe5dc; background: white; color: #35423b; }
-.oauth-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 9px; }
 .divider { display: flex; align-items: center; gap: 10px; margin: 15px 0 5px; color: #929b96; font-size: 10px; }
 .divider:before, .divider:after { content: ""; flex: 1; height: 1px; background: #e7ebe4; }
 .modal-toggle { width: 100%; margin-top: 14px; border: 0; background: transparent; color: var(--green); cursor: pointer; font-size: 11px; }

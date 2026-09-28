@@ -32,10 +32,8 @@ Migration 003 تتطلب امتداد `pg_cron` لتشغيل تنظيف الضي
 
 1. أنشئ Cloudflare Turnstile widget وأضف نطاق Render و`localhost` إلى أسماء النطاقات المسموحة.
 2. في Supabase Auth > Security and Protection > CAPTCHA اختر Turnstile وأدخل Secret Key الخاص بـCloudflare. لا تضع هذا السر في Render.
-3. من Authentication > Providers فعّل Email وAnonymous Sign-Ins. يتطلب الضيف تحقق Turnstile؛ بدون `VITE_TURNSTILE_SITE_KEY` لا ينشئ التطبيق جلسة مجهولة سحابية، لكن يبقى تسجيل الحساب متاحاً. الجلسة المجهولة تحفظ المحادثات دون نموذج تسجيل، وعند ربط بريد أو OAuth تبقى المحادثات على الهوية نفسها.
-4. فعّل **Manual identity linking** لتحويل جلسة الضيف إلى Google أو Apple دون إنشاء هوية جديدة.
-5. في Authentication > URL Configuration عيّن Site URL إلى نطاق Render وأضف `https://YOUR-SERVICE.onrender.com/**` و`http://localhost:5173/**` إلى Redirect URLs.
-6. أضف callback الذي تعرضه لوحة Supabase إلى إعدادات Google/Apple، ثم خزّن Client ID وSecret في لوحة Supabase، لا في Render.
+3. من Authentication > Providers فعّل Email وAnonymous Sign-Ins فقط. يتطلب الضيف تحقق Turnstile؛ بدون `VITE_TURNSTILE_SITE_KEY` لا ينشئ التطبيق جلسة مجهولة سحابية، لكن يبقى تسجيل الحساب بالبريد متاحاً. الجلسة المجهولة تحفظ المحادثات دون نموذج تسجيل.
+4. في Authentication > URL Configuration عيّن Site URL إلى نطاق Render وأضف `https://YOUR-SERVICE.onrender.com/**` و`http://localhost:5173/**` إلى Redirect URLs.
 
 المتغيرات العامة للواجهة:
 
@@ -93,6 +91,6 @@ npm audit
 npx deno check supabase/functions/academic-advisor/index.ts
 ```
 
-اختبر تسجيل حسابين وعزل محادثاتهما، ضيفاً يعود بعد تحديث الصفحة، حذف سجل الضيف بعد 24 ساعة، ترقية الضيف مع بقاء المحادثات، الرسالة 41، مرفقاً مسموحاً وآخر مرفوضاً، وروابط OAuth على نطاق Render. اختبر تحميل الملف من حساب مختلف وتأكد من رفضه.
+اختبر تسجيل الدخول وإنشاء الحساب بالبريد، جلسة ضيف تعود بعد تحديث الصفحة، حذف سجل الضيف بعد 24 ساعة، ترقية الضيف مع بقاء المحادثات، الرسالة 41، مرفقاً مسموحاً وآخر مرفوضاً، وعناوين URL على نطاق Render. اختبر تحميل الملف من حساب مختلف وتأكد من رفضه.
 
 تفعيل Anonymous Auth بلا Turnstile يعرّض الحصة للاستنزاف بهويات متعددة؛ لا تنشره قبل إعداد Site Key وSecret والتحقق من عمل challenge على نطاق Render. Turnstile يقلل الإساءة لكنه ليس بديلاً عن مراقبة حدود Supabase وGoogle AI. لا تضمن Free Tier تحمل 400 مستخدم متزامن أو زمناً محدداً، ولا يمكن اعتبار المشروع مدقق اختراقاً أو خالياً من كل الثغرات دون إعداد أسرار المشروع واختبارات ضغط/اختراق فعلية.
