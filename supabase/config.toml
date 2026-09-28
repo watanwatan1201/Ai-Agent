@@ -1,0 +1,2 @@
+[functions.academic-advisor]
+verify_jwt = true
