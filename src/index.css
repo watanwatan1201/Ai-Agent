@@ -32,11 +32,15 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 #root { height: 100vh; height: 100dvh; min-height: 0; }
 
 .app-shell { display: flex; width: 100%; height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; background: #f7f8f5; }
-.sidebar { width: 284px; height: 100vh; height: 100dvh; flex: 0 0 284px; min-height: 0; padding: 24px 16px 16px; overflow-y: auto; background: #f0f2ed; border-inline-end: 1px solid #e5e8e1; display: flex; flex-direction: column; transition: transform .24s ease, width .24s ease, flex-basis .24s ease; z-index: 10; }
-.sidebar.collapsed { display: none; }
+.sidebar { width: 284px; height: 100vh; height: 100dvh; flex: 0 0 284px; min-height: 0; padding: 24px 16px 16px; overflow-y: auto; background: #f0f2ed; border-inline-end: 1px solid #e5e8e1; display: flex; flex-direction: column; transition: transform .24s ease, width .24s ease, flex-basis .24s ease, padding .24s ease, opacity .18s ease, visibility 0s linear; z-index: 10; }
+.sidebar.collapsed { transition-delay: 0s, 0s, 0s, 0s, 0s, .24s; }
+@media (min-width: 761px) {
+  .sidebar.collapsed { width: 0; flex-basis: 0; padding-inline: 0; border-inline-end-width: 0; opacity: 0; visibility: hidden; overflow: hidden; }
+}
 .brand-row { display: flex; align-items: center; justify-content: space-between; padding: 0 8px; margin-bottom: 30px; }
 .brand-lockup { display: flex; align-items: center; gap: 10px; }
 .brand-mark { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; color: #fafff6; background: var(--green); }
+.brand-icon { display: block; width: 100%; height: 100%; border-radius: inherit; }
 .brand-name { font-size: 19px; line-height: 1; font-weight: 700; letter-spacing: 0; }
 .brand-caption { color: var(--muted); font-family: Arial, sans-serif; font-size: 10px; direction: ltr; margin-top: 4px; }
 .icon-button { width: 36px; height: 36px; padding: 0; border: 0; display: grid; place-items: center; border-radius: 10px; background: transparent; color: #59645f; cursor: pointer; transition: background .18s ease, color .18s ease; }

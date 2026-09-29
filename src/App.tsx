@@ -710,7 +710,7 @@ function App() {
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''} ${isSidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="brand-row">
           <div className="brand-lockup">
-            <div className="brand-mark"><GraduationCap size={21} /></div>
+            <div className="brand-mark"><img className="brand-icon" src="/daleel-icon.svg" alt="" /></div>
             <div>
               <div className="brand-name">{t.brand}</div>
               <div className="brand-caption">{t.university}</div>
@@ -970,7 +970,7 @@ function App() {
       {cookieConsent === null && (
         <div className="modal-backdrop cookie-backdrop">
           <section className="account-modal cookie-modal" role="dialog" aria-modal="true" aria-labelledby="cookie-title">
-            <div className="brand-mark cookie-mark"><GraduationCap size={21} /></div>
+            <div className="brand-mark cookie-mark"><img className="brand-icon" src="/daleel-icon.svg" alt="" /></div>
             <h2 className="modal-title" id="cookie-title">{t.cookieTitle}</h2>
             <p className="cookie-copy">{t.cookieDescription}</p>
             <label className="field-label" htmlFor="cookie-name">{t.cookieName}</label>
