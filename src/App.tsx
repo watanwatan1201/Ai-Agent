@@ -38,7 +38,6 @@ import {
 } from './lib/preferences'
 import type { AccentTheme, CookieConsent } from './lib/preferences'
 import { supabase } from './lib/supabase'
-import { Turnstile } from '@marsidev/react-turnstile'
 
 const CHAT_STORAGE_KEY = 'daleel-local-chats'
 const DAILY_LIMIT = 40
@@ -88,7 +87,6 @@ const ATTACHMENT_BUCKET = 'academic-attachments'
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const MAX_ATTACHMENTS = 5
 const MAX_MESSAGE_LENGTH = 8000
-const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || ''
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf',
   'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -156,8 +154,6 @@ function playUiSound(kind: 'send' | 'voice') {
 function App() {
   const [authUser, setAuthUser] = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(() => !supabase)
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
-  const [captchaWidgetKey, setCaptchaWidgetKey] = useState(0)
   const [guestAuthFailed, setGuestAuthFailed] = useState(false)
   const [locale, setLocale] = useState<AppLocale>(() => detectLocale())
   const [theme, setTheme] = useState<AccentTheme>(() => readAccentTheme())
@@ -208,8 +204,16 @@ function App() {
     const client = supabase
     if (!client) return
 
+    let isActive = true
+    const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
+      setAuthUser(session?.user ?? null)
+      setAuthReady(true)
+    })
+
     client.auth.getSession().then(async ({ data, error }) => {
+      if (!isActive) return
       if (error) {
+        setGuestAuthFailed(true)
         setAuthReady(true)
         return
       }
@@ -218,43 +222,27 @@ function App() {
         setAuthReady(true)
         return
       }
-      if (!turnstileSiteKey) {
-        setAuthUser(null)
+      const { data: guestData, error: guestError } = await client.auth.signInAnonymously()
+      if (!isActive) return
+      if (guestError || !guestData.user) {
+        setGuestAuthFailed(true)
         setAuthReady(true)
         return
       }
-      setAuthReady(true)
-    })
-
-    const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
-      setAuthUser(session?.user ?? null)
-      setAuthReady(true)
-    })
-
-    return () => listener.subscription.unsubscribe()
-  }, [])
-
-  useEffect(() => {
-    const client = supabase
-    if (!client || authUser || !captchaToken) return
-
-    let isActive = true
-    client.auth.signInAnonymously({ options: { captchaToken } }).then(({ data, error }) => {
-      if (!isActive) return
-      if (error) {
-        setGuestAuthFailed(true)
-        setCaptchaToken(null)
-        setCaptchaWidgetKey((current) => current + 1)
-        return
-      }
       setGuestAuthFailed(false)
-      setCaptchaToken(null)
-      setAuthUser(data.user)
+      setAuthUser(guestData.user)
+      setAuthReady(true)
+    }).catch(() => {
+      if (!isActive) return
+      setGuestAuthFailed(true)
       setAuthReady(true)
     })
 
-    return () => { isActive = false }
-  }, [authUser, captchaToken])
+    return () => {
+      isActive = false
+      listener.subscription.unsubscribe()
+    }
+  }, [])
 
   useEffect(() => {
     if (!supabase || !authUser || authUser.is_anonymous) return
@@ -513,7 +501,7 @@ function App() {
       return
     }
     if (supabase && !authUser) {
-      notify(t.guestCaptchaRequired)
+      notify(t.guestAuthError)
       return
     }
 
@@ -695,16 +683,13 @@ function App() {
       return
     }
     const result = authMode === 'signup'
-      ? await supabase.auth.signUp({ email, password, options: { data: { full_name: nameDraft.trim() }, captchaToken: captchaToken ?? undefined } })
-      : await supabase.auth.signInWithPassword({ email, password, options: { captchaToken: captchaToken ?? undefined } })
+      ? await supabase.auth.signUp({ email, password, options: { data: { full_name: nameDraft.trim() } } })
+      : await supabase.auth.signInWithPassword({ email, password })
     setIsAuthBusy(false)
     if (result.error) {
-      setCaptchaToken(null)
-      setCaptchaWidgetKey((current) => current + 1)
       setAuthError(result.error.message)
       return
     }
-    setCaptchaToken(null)
     if (authMode === 'signup' && !result.data.session) {
       setAuthError(t.emailConfirmation)
     } else {
@@ -835,23 +820,9 @@ function App() {
             </div>
           )}
 
-          {hasSupabaseConfig && authReady && !authUser && turnstileSiteKey && !isAccountOpen && (
-            <section className="guest-captcha" aria-label={t.guestVerification}>
-              <div className="guest-captcha-copy">{t.guestVerification}</div>
-              <Turnstile
-                key={captchaWidgetKey}
-                siteKey={turnstileSiteKey}
-                onSuccess={(token) => { setGuestAuthFailed(false); setCaptchaToken(token) }}
-                onExpire={() => setCaptchaToken(null)}
-                onError={() => setGuestAuthFailed(true)}
-                options={{ language: locale, theme: 'light', refreshExpired: 'auto', size: 'compact' }}
-              />
-              {guestAuthFailed && <div className="modal-error" role="alert">{t.guestAuthError}</div>}
-            </section>
-          )}
-          {hasSupabaseConfig && authReady && !authUser && !turnstileSiteKey && (
+          {hasSupabaseConfig && authReady && !authUser && guestAuthFailed && (
             <div className="guest-auth-notice">
-              <span>{t.guestCaptchaRequired}</span>
+              <span>{t.guestAuthError}</span>
               <button type="button" onClick={openAccount}>{t.signIn}</button>
             </div>
           )}
@@ -931,19 +902,6 @@ function App() {
                 <div className="divider">{authUser?.is_anonymous ? t.signUp : t.orSignIn}</div>
                 <div className="divider">{t.email}</div>
                 <form onSubmit={(event) => void handleEmailAuth(event)}>
-                  {turnstileSiteKey && (!authUser || (authUser.is_anonymous && authMode === 'signin')) && (
-                    <div className="guest-captcha account-captcha">
-                      <div className="guest-captcha-copy">{t.guestVerification}</div>
-                      <Turnstile
-                        key={`account-${captchaWidgetKey}`}
-                        siteKey={turnstileSiteKey}
-                        onSuccess={(token) => { setGuestAuthFailed(false); setCaptchaToken(token) }}
-                        onExpire={() => setCaptchaToken(null)}
-                        onError={() => setGuestAuthFailed(true)}
-                        options={{ language: locale, theme: 'light', refreshExpired: 'auto', size: 'compact' }}
-                      />
-                    </div>
-                  )}
                   {guestAuthFailed && <div className="modal-error" role="alert">{t.guestAuthError}</div>}
                   {authMode === 'signup' && <>
                     <label className="field-label" htmlFor="signup-name">{t.displayName}</label>

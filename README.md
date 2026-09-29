@@ -30,20 +30,18 @@ Migration 003 تتطلب امتداد `pg_cron` لتشغيل تنظيف الضي
 
 ## المصادقة والضيف
 
-1. أنشئ Cloudflare Turnstile widget وأضف نطاق Render و`localhost` إلى أسماء النطاقات المسموحة.
-2. في Supabase Auth > Security and Protection > CAPTCHA اختر Turnstile وأدخل Secret Key الخاص بـCloudflare. لا تضع هذا السر في Render.
-3. من Authentication > Providers فعّل Email وAnonymous Sign-Ins فقط. يتطلب الضيف تحقق Turnstile؛ بدون `VITE_TURNSTILE_SITE_KEY` لا ينشئ التطبيق جلسة مجهولة سحابية، لكن يبقى تسجيل الحساب بالبريد متاحاً. الجلسة المجهولة تحفظ المحادثات دون نموذج تسجيل.
-4. في Authentication > URL Configuration عيّن Site URL إلى نطاق Render وأضف `https://YOUR-SERVICE.onrender.com/**` و`http://localhost:5173/**` إلى Redirect URLs.
+1. من Authentication > Providers فعّل Email وAnonymous Sign-Ins.
+2. في Authentication > URL Configuration عيّن Site URL إلى نطاق Render وأضف `https://YOUR-SERVICE.onrender.com/**` و`http://localhost:5173/**` إلى Redirect URLs.
+3. لا يتضمن التطبيق CAPTCHA. إذا كان CAPTCHA مفعلاً ضمن إعدادات Supabase Auth، عطّله حتى تعمل جلسات الضيف وتسجيل البريد.
 
 المتغيرات العامة للواجهة:
 
 ```dotenv
 VITE_SUPABASE_URL=https://YOUR-PROJECT-REF.supabase.co
 VITE_SUPABASE_ANON_KEY=YOUR_PUBLIC_ANON_OR_PUBLISHABLE_KEY
-VITE_TURNSTILE_SITE_KEY=YOUR_PUBLIC_CLOUDFLARE_SITE_KEY
 ```
 
-مفتاح anon/publishable ومفتاح Turnstile Site Key عامان. لا تنشر مفتاح `service_role` أو Turnstile Secret Key.
+مفتاح anon/publishable عام. لا تنشر مفتاح `service_role`.
 
 ## Gemini Edge Function
 
@@ -77,7 +75,7 @@ supabase functions deploy academic-advisor
 - Build Command: `npm ci && npm run build`
 - Publish Directory: `dist`
 - Rewrite: `/*` إلى `/index.html`
-- Environment: `VITE_SUPABASE_URL` و`VITE_SUPABASE_ANON_KEY` و`VITE_TURNSTILE_SITE_KEY`.
+- Environment: `VITE_SUPABASE_URL` و`VITE_SUPABASE_ANON_KEY`.
 
 متغيرات `VITE_` تدخل في build، لذا أعد Deploy بعد تغييرها. إعداد Render يضيف CSP و`X-Frame-Options` و`nosniff` و`Referrer-Policy` وقيود الأذونات. الموقع لا يحتاج خادم Node منفصلاً؛ Edge Function وGemini يُنشران على Supabase. بعد نشر Render، حدّث Site URL وRedirect URLs و`ALLOWED_ORIGINS` إلى النطاق النهائي.
 
@@ -93,4 +91,4 @@ npx deno check supabase/functions/academic-advisor/index.ts
 
 اختبر تسجيل الدخول وإنشاء الحساب بالبريد، جلسة ضيف تعود بعد تحديث الصفحة، حذف سجل الضيف بعد 24 ساعة، ترقية الضيف مع بقاء المحادثات، الرسالة 41، مرفقاً مسموحاً وآخر مرفوضاً، وعناوين URL على نطاق Render. اختبر تحميل الملف من حساب مختلف وتأكد من رفضه.
 
-تفعيل Anonymous Auth بلا Turnstile يعرّض الحصة للاستنزاف بهويات متعددة؛ لا تنشره قبل إعداد Site Key وSecret والتحقق من عمل challenge على نطاق Render. Turnstile يقلل الإساءة لكنه ليس بديلاً عن مراقبة حدود Supabase وGoogle AI. لا تضمن Free Tier تحمل 400 مستخدم متزامن أو زمناً محدداً، ولا يمكن اعتبار المشروع مدقق اختراقاً أو خالياً من كل الثغرات دون إعداد أسرار المشروع واختبارات ضغط/اختراق فعلية.
+تفعيل Anonymous Auth بلا CAPTCHA قد يعرّض الحصة للاستنزاف بهويات متعددة؛ راقب حدود Supabase وGoogle AI وفعّل حماية إساءة مناسبة عند الحاجة. لا تضمن Free Tier تحمل 400 مستخدم متزامن أو زمناً محدداً، ولا يمكن اعتبار المشروع مدقق اختراقاً أو خالياً من كل الثغرات دون إعداد أسرار المشروع واختبارات ضغط/اختراق فعلية.

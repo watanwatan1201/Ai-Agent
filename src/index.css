@@ -159,9 +159,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .cookie-copy { margin: 9px 0 15px; color: #77817c; font-size: 12px; line-height: 1.9; }
 .cookie-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 17px; }
 .cookie-actions .primary-action { margin-top: 0; }
-.guest-captcha { width: min(100%, 390px); margin: 14px auto; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; border: 1px solid #e2e7de; border-radius: 11px; background: rgba(255,255,255,.78); }
-.guest-captcha-copy { color: #65716a; text-align: center; font-size: 11px; line-height: 1.7; }
-.account-captcha { margin: 10px 0; }
 .guest-auth-notice { width: min(100%, 720px); margin: 12px auto; padding: 11px 13px; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; border: 1px solid #e4e8e0; border-radius: 10px; color: #5d6963; text-align: center; font-size: 11px; }
 .guest-auth-notice button { border: 0; background: transparent; color: var(--green); cursor: pointer; font-weight: 600; }
 
