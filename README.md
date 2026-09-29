@@ -53,7 +53,8 @@ VITE_SUPABASE_ANON_KEY=YOUR_PUBLIC_ANON_OR_PUBLISHABLE_KEY
 supabase login
 supabase link --project-ref YOUR-PROJECT-REF
 supabase secrets set GEMINI_API_KEY=YOUR_GOOGLE_AI_STUDIO_KEY
-supabase secrets set GEMINI_MODEL=gemini-2.5-flash
+supabase secrets set GEMINI_MODEL=gemini-3.8-flash
+supabase secrets set GEMINI_FALLBACK_MODEL=gemini-3.5-flash-lite
 supabase secrets set ALLOWED_ORIGINS=http://localhost:5173,https://YOUR-SERVICE.onrender.com
 supabase functions deploy academic-advisor
 ```

@@ -4,7 +4,8 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 const geminiApiKey = Deno.env.get('GEMINI_API_KEY') ?? ''
-const geminiModel = Deno.env.get('GEMINI_MODEL') || 'gemini-2.5-flash'
+const geminiModel = Deno.env.get('GEMINI_MODEL') || 'gemini-3.8-flash'
+const geminiFallbackModel = Deno.env.get('GEMINI_FALLBACK_MODEL') || 'gemini-3.5-flash-lite'
 const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') ?? '')
   .split(',')
   .map((origin) => origin.trim())
@@ -129,34 +130,53 @@ Deno.serve(async (request) => {
     }
   })
 
+  const requestGeneration = (model: string) => fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiApiKey },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemInstruction }] },
+        contents,
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 1200,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'OBJECT',
+            properties: { in_scope: { type: 'BOOLEAN' }, answer: { type: 'STRING' } },
+            required: ['in_scope', 'answer'],
+          },
+        },
+      }),
+    },
+  )
+
+  let activeModel = geminiModel
   let generationResponse: Response
   try {
-    generationResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModel)}:generateContent`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiApiKey },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemInstruction }] },
-          contents,
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 1200,
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: 'OBJECT',
-              properties: { in_scope: { type: 'BOOLEAN' }, answer: { type: 'STRING' } },
-              required: ['in_scope', 'answer'],
-            },
-          },
-        }),
-      },
-    )
-  } catch {
+    generationResponse = await requestGeneration(activeModel)
+    if ((generationResponse.status === 429 || generationResponse.status >= 500) && geminiFallbackModel !== activeModel) {
+      console.warn('Gemini primary model is busy; trying fallback', { model: activeModel, status: generationResponse.status, fallbackModel: geminiFallbackModel })
+      await generationResponse.body?.cancel().catch(() => {})
+      activeModel = geminiFallbackModel
+      generationResponse = await requestGeneration(activeModel)
+    }
+  } catch (error) {
+    console.error('Gemini request failed', error instanceof Error ? error.message : 'Unknown provider error')
     return jsonResponse({ error: 'AI provider is unavailable' }, 502, origin)
   }
 
-  if (!generationResponse.ok) return jsonResponse({ error: 'AI provider rejected the request' }, 502, origin)
+  if (!generationResponse.ok) {
+    const providerError = await generationResponse.json().catch(() => null) as { error?: { message?: string } } | null
+    const providerMessage = providerError?.error?.message || generationResponse.statusText || 'No provider details available'
+    console.error('Gemini request rejected', { model: activeModel, status: generationResponse.status, message: providerMessage })
+    return jsonResponse({
+      error: 'AI provider rejected the request',
+      provider_status: generationResponse.status,
+      provider_message: providerMessage.slice(0, 500),
+    }, 502, origin)
+  }
 
   let answer: { in_scope: boolean; answer: string }
   try {
@@ -166,7 +186,8 @@ Deno.serve(async (request) => {
     if (typeof answer.in_scope !== 'boolean' || typeof answer.answer !== 'string' || !answer.answer.trim()) {
       throw new Error('Invalid response shape')
     }
-  } catch {
+  } catch (error) {
+    console.error('Gemini response parsing failed', error instanceof Error ? error.message : 'Unknown parsing error')
     return jsonResponse({ error: 'AI returned an invalid response' }, 502, origin)
   }
 
