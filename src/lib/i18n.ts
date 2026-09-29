@@ -5,7 +5,7 @@ export const locales: AppLocale[] = ['ar', 'en', 'he']
 export const messages = {
   ar: {
     localeName: 'العربية', languageArabic: 'العربية', languageEnglish: 'English', languageHebrew: 'עברית', direction: 'rtl', brand: 'دليل', university: 'جامعة الخليل', advisor: 'المرشد الأكاديمي',
-    closeSidebar: 'إخفاء القائمة', openSidebar: 'إظهار القائمة', mobileMenu: 'فتح القائمة', newChat: 'محادثة جديدة', history: 'المحادثات السابقة', noHistory: 'ستظهر محادثاتك هنا',
+    closeSidebar: 'إخفاء القائمة', openSidebar: 'إظهار القائمة', mobileMenu: 'فتح القائمة', newChat: 'محادثة جديدة', history: 'المحادثات السابقة', noHistory: 'ستظهر محادثاتك هنا', deleteConversation: 'حذف المحادثة', confirmDeleteConversation: 'هل تريد حذف هذه المحادثة نهائياً؟', conversationDeleteError: 'تعذر حذف المحادثة. حاول مجدداً.', attachmentCleanupError: 'حُذفت المحادثة، لكن تعذر حذف أحد مرفقاتها.',
     copyright: 'جميع الحقوق محفوظة © 2026', designedBy: 'مصمم بواسطة', showPassword: 'إظهار كلمة المرور', hidePassword: 'إخفاء كلمة المرور',
     dailyMessages: 'رسائلك اليوم', renewLimit: 'يتجدد الحد يومياً عند منتصف الليل', welcomeKicker: 'مرشدك الأكاديمي في جامعة الخليل', greeting: 'أهلاً بك', greetingBack: 'أهلاً بعودتك يا', welcomeQuestion: 'كيف أقدر أساعدك؟', welcomeCopy: 'اسأل عن خطتك الدراسية، معدلك، أو الساعات المتبقية. سنساعدك على ترتيب خطواتك الأكاديمية بوضوح.',
     suggestions: ['كيف أحسب معدلي التراكمي؟', 'ساعدني في فهم خطتي الدراسية', 'كم ساعة متبقية لي للتخرج؟', 'ما الفرق بين المعدل الفصلي والتراكمي؟'],
@@ -23,7 +23,7 @@ export const messages = {
   },
   en: {
     localeName: 'English', languageArabic: 'العربية', languageEnglish: 'English', languageHebrew: 'עברית', direction: 'ltr', brand: 'Daleel', university: 'Hebron University', advisor: 'Academic Advisor',
-    closeSidebar: 'Hide sidebar', openSidebar: 'Show sidebar', mobileMenu: 'Open menu', newChat: 'New chat', history: 'Recent chats', noHistory: 'Your chats will appear here',
+    closeSidebar: 'Hide sidebar', openSidebar: 'Show sidebar', mobileMenu: 'Open menu', newChat: 'New chat', history: 'Recent chats', noHistory: 'Your chats will appear here', deleteConversation: 'Delete conversation', confirmDeleteConversation: 'Delete this conversation permanently?', conversationDeleteError: 'Could not delete this conversation. Try again.', attachmentCleanupError: 'The conversation was deleted, but one of its attachments could not be removed.',
     copyright: '© 2026 All rights reserved', designedBy: 'Designed by', showPassword: 'Show password', hidePassword: 'Hide password',
     dailyMessages: 'Messages today', renewLimit: 'Daily limit resets at midnight', welcomeKicker: 'Your Hebron University academic advisor', greeting: 'Welcome', greetingBack: 'Welcome back,', welcomeQuestion: 'How can I help?', welcomeCopy: 'Ask about your study plan, GPA, or remaining credit hours. We will help you map your next academic steps.',
     suggestions: ['How do I calculate my cumulative GPA?', 'Help me understand my study plan', 'How many credits do I need to graduate?', 'What is the difference between semester and cumulative GPA?'],
@@ -41,7 +41,7 @@ export const messages = {
   },
   he: {
     localeName: 'עברית', languageArabic: 'العربية', languageEnglish: 'English', languageHebrew: 'עברית', direction: 'rtl', brand: 'دليل', university: 'אוניברסיטת חברון', advisor: 'יועץ אקדמי',
-    closeSidebar: 'הסתרת סרגל צד', openSidebar: 'הצגת סרגל צד', mobileMenu: 'פתיחת תפריט', newChat: 'שיחה חדשה', history: 'שיחות אחרונות', noHistory: 'השיחות שלך יופיעו כאן',
+    closeSidebar: 'הסתרת סרגל צד', openSidebar: 'הצגת סרגל צד', mobileMenu: 'פתיחת תפריט', newChat: 'שיחה חדשה', history: 'שיחות אחרונות', noHistory: 'השיחות שלך יופיעו כאן', deleteConversation: 'מחיקת שיחה', confirmDeleteConversation: 'למחוק את השיחה לצמיתות?', conversationDeleteError: 'לא ניתן למחוק את השיחה. נסו שוב.', attachmentCleanupError: 'השיחה נמחקה, אך לא ניתן היה למחוק אחד מהקבצים המצורפים.',
     copyright: '© 2026 כל הזכויות שמורות', designedBy: 'עוצב על ידי', showPassword: 'הצגת הסיסמה', hidePassword: 'הסתרת הסיסמה',
     dailyMessages: 'הודעות היום', renewLimit: 'המגבלה מתאפסת בחצות', welcomeKicker: 'היועץ האקדמי שלך באוניברסיטת חברון', greeting: 'שלום', greetingBack: 'טוב שחזרת,', welcomeQuestion: 'איך אפשר לעזור?', welcomeCopy: 'אפשר לשאול על תוכנית הלימודים, הממוצע או נקודות הזכות שנותרו. נעזור לך לתכנן את הצעדים האקדמיים הבאים.',
     suggestions: ['איך מחשבים ממוצע מצטבר?', 'עזור לי להבין את תוכנית הלימודים', 'כמה נקודות זכות נותרו לי לתואר?', 'מה ההבדל בין ממוצע סמסטריאלי למצטבר?'],

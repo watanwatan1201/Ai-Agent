@@ -54,8 +54,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .sidebar-signout:hover { background: #f7e9e6; color: #a33f37; }
 .sidebar-footer { padding: 12px 7px 2px; display: grid; gap: 5px; color: #929b96; text-align: center; font-size: 9px; line-height: 1.5; animation: arrive .35s ease both; }
 .history-list { min-height: 0; overflow-y: auto; display: grid; gap: 3px; }
-.history-item { width: 100%; min-width: 0; display: flex; align-items: center; gap: 10px; border: 0; padding: 10px 11px; border-radius: 9px; text-align: right; background: transparent; color: #56615c; cursor: pointer; }
+.history-row { min-width: 0; display: flex; align-items: center; gap: 2px; border-radius: 9px; }
+.history-item { flex: 1 1 auto; width: 100%; min-width: 0; display: flex; align-items: center; gap: 10px; border: 0; padding: 10px 8px 10px 11px; border-radius: 9px; text-align: start; background: transparent; color: #56615c; cursor: pointer; }
 .history-item:hover, .history-item.active { background: #e5e9e1; color: var(--ink); }
+.history-delete { flex: 0 0 30px; width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: #8f6c65; opacity: .72; cursor: pointer; }
+.history-row:hover .history-delete, .history-delete:focus-visible { opacity: 1; }
+.history-delete:hover { background: #f7e9e6; color: #a33f37; }
 .history-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; }
 .history-empty { padding: 10px 12px; color: #929b96; font-size: 12px; }
 .sidebar-spacer { flex: 1; min-height: 20px; }

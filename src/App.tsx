@@ -23,6 +23,7 @@ import {
   Settings,
   Send,
   Sparkles,
+  Trash2,
   X,
 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
@@ -189,6 +190,7 @@ function App() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const speechRecognitionRef = useRef<SpeechRecognitionLike | null>(null)
+  const authUserIdRef = useRef<string | null>(null)
   const t = translations[locale]
   const studentName = getUserName(authUser, localName, locale)
   const isRegistered = Boolean(authUser && !authUser.is_anonymous)
@@ -208,7 +210,15 @@ function App() {
 
     let isActive = true
     const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
-      setAuthUser(session?.user ?? null)
+      const nextUser = session?.user ?? null
+      const nextUserId = nextUser?.id ?? null
+      if (authUserIdRef.current !== nextUserId) {
+        authUserIdRef.current = nextUserId
+        setActiveId(null)
+        setMessages([])
+        setTypingMessageId(null)
+      }
+      setAuthUser(nextUser)
       setAuthReady(true)
     })
 
@@ -258,8 +268,6 @@ function App() {
       if (!supabase || !authUser) {
         const localChats = readLocalChats()
         setConversations(localChats)
-        setActiveId(null)
-        setMessages([])
         setUsedToday(getLocalUsage())
         return
       }
@@ -276,8 +284,6 @@ function App() {
 
       const savedConversations = (data ?? []) as Conversation[]
       setConversations(savedConversations)
-      setActiveId(null)
-      setMessages([])
 
       const { data: usage } = await supabase.rpc('get_daily_usage')
       setUsedToday(Number(usage ?? 0))
@@ -490,6 +496,46 @@ function App() {
     setMessages(loadedMessages)
     void resolveAttachmentUrls(loadedMessages)
     setIsLoadingMessages(false)
+  }
+
+  async function deleteConversation(conversation: Conversation) {
+    if (!window.confirm(t.confirmDeleteConversation)) return
+
+    if (supabase && authUser) {
+      const { data: messageRows, error: messagesError } = await supabase
+        .from('messages')
+        .select('attachments')
+        .eq('conversation_id', conversation.id)
+      if (messagesError) {
+        notify(t.conversationDeleteError)
+        return
+      }
+
+      const attachmentPaths = (messageRows ?? []).flatMap((row) =>
+        ((row.attachments ?? []) as MessageAttachment[]).map((attachment) => attachment.path),
+      )
+      const { error } = await supabase.from('conversations').delete().eq('id', conversation.id)
+      if (error) {
+        notify(t.conversationDeleteError)
+        return
+      }
+      if (attachmentPaths.length) {
+        const { error: attachmentError } = await supabase.storage.from(ATTACHMENT_BUCKET).remove(attachmentPaths)
+        if (attachmentError) notify(t.attachmentCleanupError)
+      }
+    } else {
+      const remainingChats = readLocalChats().filter((item) => item.id !== conversation.id)
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(remainingChats))
+    }
+
+    setConversations((current) => current.filter((item) => item.id !== conversation.id))
+    if (activeId === conversation.id) {
+      setActiveId(null)
+      setMessages([])
+      setTypingMessageId(null)
+      setDraft('')
+      setPendingFiles([])
+    }
   }
 
   async function sendMessage(content = draft) {
@@ -735,15 +781,25 @@ function App() {
         <div className="side-label">{t.history}</div>
         <div className="history-list">
           {conversations.length ? conversations.map((conversation) => (
-            <button
-              className={`history-item ${activeId === conversation.id ? 'active' : ''}`}
-              key={conversation.id}
-              onClick={() => void openConversation(conversation)}
-              title={conversation.title}
-            >
-              <MessageSquareText size={15} />
-              <span className="history-title">{conversation.title}</span>
-            </button>
+            <div className="history-row" key={conversation.id}>
+              <button
+                className={`history-item ${activeId === conversation.id ? 'active' : ''}`}
+                onClick={() => void openConversation(conversation)}
+                title={conversation.title}
+              >
+                <MessageSquareText size={15} />
+                <span className="history-title">{conversation.title}</span>
+              </button>
+              <button
+                className="history-delete"
+                type="button"
+                title={t.deleteConversation}
+                aria-label={t.deleteConversation}
+                onClick={() => void deleteConversation(conversation)}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
           )) : <div className="history-empty">{t.noHistory}</div>}
         </div>
 
