@@ -95,6 +95,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .message-avatar.out-of-scope-avatar { background: #f8e9e6; color: #a33f37; }
 .message-row.user .message-avatar { background: #ead7cd; color: #8c4c37; }
 .message-bubble { max-width: min(78%, 650px); padding: 12px 15px; border: 1px solid #e8ebe5; border-radius: 4px 14px 14px; background: #fff; color: #3d4943; font-size: 13px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; }
+.typing-cursor { display: inline-block; width: 1px; height: 1em; margin-inline-start: 2px; vertical-align: -.15em; background: var(--green); animation: caret-blink .8s steps(2, start) infinite; }
 .message-row.user .message-bubble { border-color: #e6e9e3; border-radius: 14px 4px 14px 14px; background: #edf0e9; }
 .message-time { margin-top: 5px; color: #a0a8a3; font-family: Arial, sans-serif; font-size: 9px; direction: ltr; }
 .composer-wrap { width: min(100%, 720px); flex: 0 0 auto; margin: 18px auto 0; }
@@ -173,6 +174,7 @@ button:not(:disabled):active { transform: scale(.97); }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pulse { 50% { box-shadow: 0 0 0 4px rgba(163,63,55,.12); } }
 @keyframes think { 50% { transform: translateY(-4px) rotate(2deg); box-shadow: 0 8px 22px color-mix(in srgb, var(--green) 15%, transparent); } }
+@keyframes caret-blink { to { visibility: hidden; } }
 
 @media (max-width: 760px) {
   .sidebar { position: fixed; inset-block: 0; inset-inline-start: 0; width: min(84vw, 310px); min-height: 100dvh; box-shadow: 15px 0 40px rgba(25,38,30,.12); transform: translateX(-110%); }

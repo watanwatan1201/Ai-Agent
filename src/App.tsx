@@ -161,8 +161,8 @@ function App() {
   const [cookieNameDraft, setCookieNameDraft] = useState(() => readGuestName())
   const [localName, setLocalName] = useState(() => readGuestName())
   const [conversations, setConversations] = useState<Conversation[]>(() => readLocalChats())
-  const [activeId, setActiveId] = useState<string | null>(() => readLocalChats()[0]?.id ?? null)
-  const [messages, setMessages] = useState<Message[]>(() => readLocalChats()[0]?.messages ?? [])
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
   const [draft, setDraft] = useState('')
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [signedAttachmentUrls, setSignedAttachmentUrls] = useState<Record<string, string>>({})
@@ -184,6 +184,8 @@ function App() {
   const [isAuthBusy, setIsAuthBusy] = useState(false)
   const [toast, setToast] = useState('')
   const [isThinking, setIsThinking] = useState(false)
+  const [typingMessageId, setTypingMessageId] = useState<string | null>(null)
+  const [typedLength, setTypedLength] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const speechRecognitionRef = useRef<SpeechRecognitionLike | null>(null)
@@ -256,8 +258,8 @@ function App() {
       if (!supabase || !authUser) {
         const localChats = readLocalChats()
         setConversations(localChats)
-        setActiveId(localChats[0]?.id ?? null)
-        setMessages(localChats[0]?.messages ?? [])
+        setActiveId(null)
+        setMessages([])
         setUsedToday(getLocalUsage())
         return
       }
@@ -274,21 +276,8 @@ function App() {
 
       const savedConversations = (data ?? []) as Conversation[]
       setConversations(savedConversations)
-      const firstConversation = savedConversations[0]
-      setActiveId(firstConversation?.id ?? null)
-
-      if (firstConversation) {
-        const { data: savedMessages } = await supabase
-          .from('messages')
-          .select('id, role, content, created_at, attachments, is_out_of_scope, reply_to')
-          .eq('conversation_id', firstConversation.id)
-          .order('created_at', { ascending: true })
-        const loadedMessages = (savedMessages ?? []) as Message[]
-        setMessages(loadedMessages)
-        void resolveAttachmentUrls(loadedMessages)
-      } else {
-        setMessages([])
-      }
+      setActiveId(null)
+      setMessages([])
 
       const { data: usage } = await supabase.rpc('get_daily_usage')
       setUsedToday(Number(usage ?? 0))
@@ -296,6 +285,22 @@ function App() {
 
     void loadHistory()
   }, [authReady, authUser, t.databaseLoadError])
+
+  useEffect(() => {
+    if (!typingMessageId) return
+    const message = messages.find((item) => item.id === typingMessageId)
+    if (!message || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    let currentLength = 0
+    const step = Math.max(1, Math.ceil(message.content.length / 90))
+    const timer = window.setInterval(() => {
+      currentLength = Math.min(currentLength + step, message.content.length)
+      setTypedLength(currentLength)
+      if (currentLength >= message.content.length) setTypingMessageId(null)
+    }, 20)
+
+    return () => window.clearInterval(timer)
+  }, [typingMessageId, messages])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -374,6 +379,7 @@ function App() {
   function startNewChat() {
     setActiveId(null)
     setMessages([])
+    setTypingMessageId(null)
     setDraft('')
     setPendingFiles([])
     setIsSidebarOpen(false)
@@ -465,6 +471,7 @@ function App() {
 
   async function openConversation(conversation: Conversation) {
     setActiveId(conversation.id)
+    setTypingMessageId(null)
     setIsSidebarOpen(false)
     if (!supabase || !authUser) {
       const saved = readLocalChats().find((item) => item.id === conversation.id)
@@ -599,7 +606,9 @@ function App() {
       if (advisorError || !assistantMessage) {
         notify(t.advisorUnavailable)
       } else {
+        setTypedLength(0)
         setMessages((current) => [...current, assistantMessage])
+        setTypingMessageId(assistantMessage.id)
       }
     } else {
       const nextUsage = getLocalUsage() + 1
@@ -792,29 +801,34 @@ function App() {
             </div>
           ) : (
             <div className="messages" role="log" aria-live="polite">
-              {messages.map((message) => (
-                <article className={`message-row ${message.role}`} key={message.id}>
-                  <span className={`message-avatar ${message.is_out_of_scope ? 'out-of-scope-avatar' : ''}`}>
-                    {message.role === 'user' ? studentName.trim().charAt(0) : message.is_out_of_scope ? <Frown size={18} /> : <BrainCircuit size={16} />}
-                  </span>
-                  <div>
-                    <div className="message-bubble" dir="auto">{message.content}</div>
-                    {message.attachments?.length ? (
-                      <div className="message-attachments">
-                        {message.attachments.map((attachment) => (
-                          <a className="message-attachment" href={signedAttachmentUrls[attachment.path]} aria-disabled={!signedAttachmentUrls[attachment.path]} key={attachment.path} onClick={(event) => { if (!signedAttachmentUrls[attachment.path]) event.preventDefault() }} target="_blank" rel="noreferrer" aria-label={t.openAttachment.replace('{name}', attachment.name)}>
-                            {attachment.type.startsWith('image/') && signedAttachmentUrls[attachment.path]
-                              ? <img src={signedAttachmentUrls[attachment.path]} alt={attachment.name} />
-                              : <FileText size={16} />}
-                            <span>{attachment.name}</span>
-                          </a>
-                        ))}
-                      </div>
-                    ) : null}
-                    <div className="message-time">{new Date(message.created_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</div>
-                  </div>
-                </article>
-              ))}
+              {messages.map((message) => {
+                const isTyping = typingMessageId === message.id
+                const shouldAnimate = isTyping && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                const visibleContent = shouldAnimate ? message.content.slice(0, typedLength) : message.content
+                return (
+                  <article className={`message-row ${message.role}`} key={message.id}>
+                    <span className={`message-avatar ${message.is_out_of_scope ? 'out-of-scope-avatar' : ''}`}>
+                      {message.role === 'user' ? studentName.trim().charAt(0) : message.is_out_of_scope ? <Frown size={18} /> : <BrainCircuit size={16} />}
+                    </span>
+                    <div>
+                      <div className="message-bubble" dir="auto">{visibleContent}{shouldAnimate && <span className="typing-cursor" aria-hidden="true" />}</div>
+                      {message.attachments?.length ? (
+                        <div className="message-attachments">
+                          {message.attachments.map((attachment) => (
+                            <a className="message-attachment" href={signedAttachmentUrls[attachment.path]} aria-disabled={!signedAttachmentUrls[attachment.path]} key={attachment.path} onClick={(event) => { if (!signedAttachmentUrls[attachment.path]) event.preventDefault() }} target="_blank" rel="noreferrer" aria-label={t.openAttachment.replace('{name}', attachment.name)}>
+                              {attachment.type.startsWith('image/') && signedAttachmentUrls[attachment.path]
+                                ? <img src={signedAttachmentUrls[attachment.path]} alt={attachment.name} />
+                                : <FileText size={16} />}
+                              <span>{attachment.name}</span>
+                            </a>
+                          ))}
+                        </div>
+                      ) : null}
+                      <div className="message-time">{new Date(message.created_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                  </article>
+                )
+              })}
               {isThinking && <div className="agent-thinking"><span className="thinking-icon"><BrainCircuit size={22} /></span><span>{t.thinking}</span></div>}
               <div ref={messagesEndRef} />
             </div>
