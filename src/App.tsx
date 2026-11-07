@@ -185,8 +185,6 @@ function App() {
   const [isAuthBusy, setIsAuthBusy] = useState(false)
   const [toast, setToast] = useState('')
   const [isThinking, setIsThinking] = useState(false)
-  const [typingMessageId, setTypingMessageId] = useState<string | null>(null)
-  const [typedLength, setTypedLength] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const speechRecognitionRef = useRef<SpeechRecognitionLike | null>(null)
@@ -216,7 +214,6 @@ function App() {
         authUserIdRef.current = nextUserId
         setActiveId(null)
         setMessages([])
-        setTypingMessageId(null)
       }
       setAuthUser(nextUser)
       setAuthReady(true)
@@ -291,22 +288,6 @@ function App() {
 
     void loadHistory()
   }, [authReady, authUser, t.databaseLoadError])
-
-  useEffect(() => {
-    if (!typingMessageId) return
-    const message = messages.find((item) => item.id === typingMessageId)
-    if (!message || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-
-    let currentLength = 0
-    const step = Math.max(1, Math.ceil(message.content.length / 90))
-    const timer = window.setInterval(() => {
-      currentLength = Math.min(currentLength + step, message.content.length)
-      setTypedLength(currentLength)
-      if (currentLength >= message.content.length) setTypingMessageId(null)
-    }, 20)
-
-    return () => window.clearInterval(timer)
-  }, [typingMessageId, messages])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -385,7 +366,6 @@ function App() {
   function startNewChat() {
     setActiveId(null)
     setMessages([])
-    setTypingMessageId(null)
     setDraft('')
     setPendingFiles([])
     setIsSidebarOpen(false)
@@ -477,7 +457,6 @@ function App() {
 
   async function openConversation(conversation: Conversation) {
     setActiveId(conversation.id)
-    setTypingMessageId(null)
     setIsSidebarOpen(false)
     if (!supabase || !authUser) {
       const saved = readLocalChats().find((item) => item.id === conversation.id)
@@ -532,7 +511,6 @@ function App() {
     if (activeId === conversation.id) {
       setActiveId(null)
       setMessages([])
-      setTypingMessageId(null)
       setDraft('')
       setPendingFiles([])
     }
@@ -652,9 +630,7 @@ function App() {
       if (advisorError || !assistantMessage) {
         notify(t.advisorUnavailable)
       } else {
-        setTypedLength(0)
         setMessages((current) => [...current, assistantMessage])
-        setTypingMessageId(assistantMessage.id)
       }
     } else {
       const nextUsage = getLocalUsage() + 1
@@ -858,16 +834,13 @@ function App() {
           ) : (
             <div className="messages" role="log" aria-live="polite">
               {messages.map((message) => {
-                const isTyping = typingMessageId === message.id
-                const shouldAnimate = isTyping && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-                const visibleContent = shouldAnimate ? message.content.slice(0, typedLength) : message.content
                 return (
                   <article className={`message-row ${message.role}`} key={message.id}>
                     <span className={`message-avatar ${message.is_out_of_scope ? 'out-of-scope-avatar' : ''}`}>
                       {message.role === 'user' ? studentName.trim().charAt(0) : message.is_out_of_scope ? <Frown size={18} /> : <BrainCircuit size={16} />}
                     </span>
                     <div>
-                      <div className="message-bubble" dir="auto">{visibleContent}{shouldAnimate && <span className="typing-cursor" aria-hidden="true" />}</div>
+                      <div className="message-bubble" dir="auto">{message.content}</div>
                       {message.attachments?.length ? (
                         <div className="message-attachments">
                           {message.attachments.map((attachment) => (

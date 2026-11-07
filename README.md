@@ -45,7 +45,7 @@ VITE_SUPABASE_ANON_KEY=YOUR_PUBLIC_ANON_OR_PUBLISHABLE_KEY
 
 ## Gemini Edge Function
 
-الدالة `supabase/functions/academic-advisor/index.ts` تتحقق من JWT وملكية المحادثة، وتجيب فوراً عن الأسئلة الشائعة حول حساب المعدل والفرق بين المعدل الفصلي والتراكمي والساعات المتبقية وفهم الخطة الدراسية. الأسئلة الأخرى تُرسل إلى Gemini من الخادم مع سياق أقصر لخفض زمن الاستجابة، ويُعاد الرد باللغة المناسبة. ترفض المواضيع خارج الإرشاد الأكاديمي، ولا تخترع خطط جامعة الخليل أو متطلباتها. لا تتضمن سياق المرفقات إلا أسماء الملفات؛ تحليل الصور/الكشوف غير موصول بعد.
+الدالة `supabase/functions/academic-advisor/index.ts` تتحقق من JWT وملكية المحادثة. الأسئلة الشائعة تُجاب دون استدعاء Gemini أو تحميل سجل المحادثة؛ الأسئلة الأخرى تستخدم `gemini-3.5-flash-lite` افتراضياً مع سياق أقصر، ويكون الرد ظاهراً فور اكتماله (لا توجد محاكاة كتابة بطيئة). ترفض المواضيع خارج الإرشاد الأكاديمي، ولا تخترع خطط جامعة الخليل أو متطلباتها. لا تتضمن سياق المرفقات إلا أسماء الملفات؛ تحليل الصور/الكشوف غير موصول بعد.
 
 ثبّت Supabase CLI، ثم نفّذ من جذر المشروع:
 
@@ -53,11 +53,13 @@ VITE_SUPABASE_ANON_KEY=YOUR_PUBLIC_ANON_OR_PUBLISHABLE_KEY
 supabase login
 supabase link --project-ref YOUR-PROJECT-REF
 supabase secrets set GEMINI_API_KEY=YOUR_GOOGLE_AI_STUDIO_KEY
-supabase secrets set GEMINI_MODEL=gemini-3.8-flash
-supabase secrets set GEMINI_FALLBACK_MODEL=gemini-3.5-flash-lite
+supabase secrets set GEMINI_MODEL=gemini-3.5-flash-lite
+supabase secrets set GEMINI_FALLBACK_MODEL=gemini-3.8-flash
 supabase secrets set ALLOWED_ORIGINS=http://localhost:5173,https://YOUR-SERVICE.onrender.com
 supabase functions deploy academic-advisor
 ```
+
+عند تحديث مشروع منشور، حدّث أسرار النموذج بالأوامر أعلاه ثم أعد نشر الدالة؛ تغيير القيم الافتراضية في الكود لا يتجاوز أسرار Supabase المضبوطة مسبقاً.
 
 توفر Supabase للدالة `SUPABASE_URL` و`SUPABASE_ANON_KEY` و`SUPABASE_SERVICE_ROLE_KEY` كمتغيرات بيئة مدارة. مفتاح الخدمة لا يخرج من Edge Function. لا تضع مفتاح Google AI في Render. إذا تغير نطاق Render، حدّث `ALLOWED_ORIGINS` ثم أعد نشر الدالة.
 
